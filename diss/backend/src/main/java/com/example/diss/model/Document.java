@@ -1,5 +1,6 @@
 package com.example.diss.model;
 
+import com.fasterxml.jackson.annotation.JsonView;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -10,6 +11,7 @@ import java.util.Set;
 @Entity
 @Table(name = "documents")
 @Data
+@JsonView(Document.Views.Summary.class)
 public class Document {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +21,9 @@ public class Document {
     private String filePath;
     private String fileType;
 
-    @Lob
+    @Basic(fetch = FetchType.LAZY)
+    @Column(columnDefinition = "TEXT")
+    @JsonView(Views.Detail.class)
     private String content;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -31,4 +35,9 @@ public class Document {
 
     private LocalDateTime uploadedAt;
 
+    public static class Views {
+        public interface Summary {}
+        public interface Detail extends Summary {}
+    }
 }
+

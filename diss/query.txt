@@ -1,0 +1,17 @@
+ALTER TABLE documents ADD COLUMN content_tsv tsvector;
+
+UPDATE documents SET content_tsv = to_tsvector('english', content);
+
+CREATE INDEX content_tsv_idx ON documents USING GIN(content_tsv);
+
+
+CREATE FUNCTION document_tsvector_update() RETURNS trigger AS $$
+begin
+  new.content_tsv := to_tsvector('english', new.content);
+  return new;
+end
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tsvectorupdate
+BEFORE INSERT OR UPDATE ON documents
+FOR EACH ROW EXECUTE FUNCTION document_tsvector_update();

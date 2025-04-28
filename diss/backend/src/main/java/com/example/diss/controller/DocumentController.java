@@ -1,11 +1,10 @@
 package com.example.diss.controller;
 
 import com.example.diss.model.Document;
-import com.example.diss.model.Tag;
 import com.example.diss.service.DocumentService;
+import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -17,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -37,30 +37,38 @@ public class DocumentController {
 
     // List all documents
     @GetMapping("/")
+    @JsonView(Document.Views.Summary.class)
     public ResponseEntity<List<Document>> listDocuments() {
         List<Document> documents = documentService.listDocuments();
         return new ResponseEntity<>(documents, HttpStatus.OK);
     }
 
     @GetMapping("/download/{documentId}")
-    public ResponseEntity<Resource> downloadDocument(@PathVariable Long documentId) throws IOException {
-        byte[] fileBytes = documentService.downloadFileByDocumentId(documentId);
+    public ResponseEntity<?> downloadDocument(@PathVariable Long documentId) throws IOException {
+        try {
+            byte[] fileBytes = documentService.downloadFileByDocumentId(documentId);
 
-        // Get the document object to retrieve the filename and extension
-        Document doc = documentService.getDocumentById(documentId);  // Ensure you have a method to get the Document by ID
+            Document doc = documentService.getDocumentById(documentId);
 
-        // Extract the file extension from the filePath (ensure to get the file name)
-        String fileName = Paths.get(doc.getFilePath()).getFileName().toString();
-        String fileExtension = fileName.substring(fileName.lastIndexOf("."));
+            String fileName = Paths.get(doc.getFilePath()).getFileName().toString();
+            String fileExtension = fileName.substring(fileName.lastIndexOf("."));
 
-        // Create a resource from the file bytes
-        Resource resource = new ByteArrayResource(fileBytes);
+            Resource resource = new ByteArrayResource(fileBytes);
 
-        // Set the content-disposition header to indicate it's a file download with the correct extension
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(resource);
+
+        } catch (IllegalArgumentException e) {
+            // This will catch if documentId is invalid (thrown from your service)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (IOException e) {
+            // This will catch IO errors (e.g., problem reading the file)
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error reading the file."));
+        }
     }
 
     // Edit document tags
@@ -78,20 +86,46 @@ public class DocumentController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Document>> listDocumentsByUser(@PathVariable Long userId) {
-        List<Document> documents = documentService.listDocumentsByUserId(userId);
-        return new ResponseEntity<>(documents, HttpStatus.OK);
+    @JsonView(Document.Views.Summary.class)
+    public ResponseEntity<?> listDocumentsByUser(@PathVariable Long userId) {
+        try {
+            List<Document> documents = documentService.listDocumentsByUserId(userId);
+            return ResponseEntity.ok(documents);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());  // Return the "User with ID X not found." message
+        }
     }
 
-//    @GetMapping("/{id}/content")
-//    public ResponseEntity<String> getDocumentContent(@PathVariable Long id) {
-//        String content = documentService.getDocumentContent(id);
-//        return ResponseEntity.ok(content);
-//    }
-//
-//    @GetMapping("/search")
-//    public ResponseEntity<List<Document>> searchDocuments(@RequestParam String keyword) {
-//        List<Document> documents = documentService.searchDocuments(keyword);
-//        return ResponseEntity.ok(documents);
-//    }
+    @GetMapping("/{id}/content")
+    @JsonView(Document.Views.Detail.class)
+    public ResponseEntity<?> getDocumentContent(@PathVariable Long id) {
+        try {
+            String content = documentService.getDocumentContent(id);
+            return ResponseEntity.ok(Map.of("content", content));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{id}")
+    @JsonView(Document.Views.Detail.class)
+
+    public ResponseEntity<?> getDocument(@PathVariable Long id) {
+        try {
+            var doc = documentService.getDocumentById(id);
+            return ResponseEntity.ok(doc);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/search")
+    @JsonView(Document.Views.Summary.class)
+    public ResponseEntity<List<Document>> searchDocuments(@RequestParam String keyword) {
+        List<Document> documents = documentService.searchDocuments(keyword);
+        return ResponseEntity.ok(documents);
+    }
 }

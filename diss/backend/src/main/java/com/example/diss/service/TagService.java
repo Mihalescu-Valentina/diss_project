@@ -1,6 +1,8 @@
 package com.example.diss.service;
 
+import com.example.diss.model.Document;
 import com.example.diss.model.Tag;
+import com.example.diss.repository.DocumentRepository;
 import com.example.diss.repository.TagRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,8 +12,13 @@ import java.util.Optional;
 
 @Service
 public class TagService {
-    @Autowired
-    private TagRepository tagRepository;
+    private final TagRepository tagRepository;
+    private final DocumentRepository documentRepository;
+
+    public TagService(TagRepository tagRepository, DocumentRepository documentRepository) {
+        this.tagRepository = tagRepository;
+        this.documentRepository = documentRepository;
+    }
 
     public List<Tag> getAllTags() {
         return tagRepository.findAll();
@@ -26,9 +33,14 @@ public class TagService {
     }
 
     public void deleteTag(Long id) {
-        if (!tagRepository.existsById(Math.toIntExact(id))) {
-            throw new IllegalArgumentException("Tag with this ID does not exist.");
+        Tag tag = tagRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tag with ID " + id + " not found."));
+
+        // Remove this tag from all documents
+        List<Document> documentsWithTag = documentRepository.findByTagsContaining(tag);
+        for (Document doc : documentsWithTag) {
+            doc.getTags().remove(tag);
         }
-        tagRepository.deleteById(Math.toIntExact(id));
+        tagRepository.deleteById(id);
     }
 }
