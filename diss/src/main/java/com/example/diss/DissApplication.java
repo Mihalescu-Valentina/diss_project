@@ -26,7 +26,7 @@ public class DissApplication {
         SpringApplication.run(DissApplication.class, args);
     }
 
-    @CrossOrigin(origins = "http://localhost:3000")
+    @CrossOrigin(origins = "http://localhost:8080")
     @GetMapping("/hello")
     public String sayHello(@RequestParam(value = "myName", defaultValue = "World") String name) {
         return String.format("Hello %s!", name);

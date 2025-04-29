@@ -27,6 +27,11 @@ public class Document {
     private String content;
 
     @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "documents_tags",
+            joinColumns = @JoinColumn(name = "documents_id"),
+            inverseJoinColumns = @JoinColumn(name = "tags_id")
+    )
     private Set<Tag> tags = new HashSet<>();
 
     @ManyToOne
