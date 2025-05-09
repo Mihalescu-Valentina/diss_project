@@ -18,6 +18,7 @@ public class Document {
     private Long id;
 
     private String title;
+    private String description;
     private String filePath;
     private String fileType;
 

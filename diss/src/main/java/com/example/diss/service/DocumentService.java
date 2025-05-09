@@ -43,7 +43,7 @@ public class DocumentService {
     @Autowired
     private FileTextExtractor fileTextExtractor;
 
-    public Document uploadDocument(Long userId, String title, MultipartFile file, List<String> tagNames) throws IOException {
+    public Document uploadDocument(Long userId, String title, String description, MultipartFile file, List<String> tagNames) throws IOException {
         // Ensure the upload directory exists
         if (!Files.exists(Paths.get(uploadDir))) {
             Files.createDirectories(Paths.get(uploadDir));
@@ -76,6 +76,7 @@ public class DocumentService {
         // Create and save the document
         Document doc = new Document();
         doc.setTitle(title);
+        doc.setDescription(description);
         doc.setFilePath(filePath.toString());
         doc.setFileType(file.getContentType());
         doc.setContent(extractedText);
