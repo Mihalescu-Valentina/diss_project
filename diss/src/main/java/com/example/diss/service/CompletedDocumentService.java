@@ -30,5 +30,6 @@ public class CompletedDocumentService {
         completed.setDocument(document);
         completedRepo.save(completed);
         return true;
+
     }
 }
