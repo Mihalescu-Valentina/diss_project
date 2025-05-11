@@ -72,6 +72,17 @@ public class DocumentController {
         }
     }
 
+    @PutMapping("/{documentId}")
+    public ResponseEntity<Document> updateDocument(@PathVariable Long documentId,
+                                                   @RequestParam(required = false) String title,
+                                                   @RequestParam(required = false) String description,
+                                                   @RequestParam(required = false) MultipartFile file,
+                                                   @RequestParam(required = false) List<String> tags) throws IOException {
+        Document updated = documentService.updateDocument(documentId, title, description, file, tags);
+        return ResponseEntity.ok(updated);
+    }
+
+
     // Edit document tags
     @PutMapping("/{documentId}/tags")
     public ResponseEntity<Document> editDocumentTags(@PathVariable Long documentId, @RequestParam List<String> tags) {
