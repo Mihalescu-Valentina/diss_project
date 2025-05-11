@@ -1,6 +1,7 @@
 package com.example.diss.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonView;
 import lombok.Data;
 
 @Entity
@@ -12,8 +13,8 @@ public class Tag {
     private Long id;
 
     @Column(unique = true)
+    @JsonView(Document.Views.Detail.class)
     private String name;
-
 }
 
 
