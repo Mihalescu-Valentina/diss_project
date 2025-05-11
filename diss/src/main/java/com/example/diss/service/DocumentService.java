@@ -6,13 +6,11 @@ import com.example.diss.model.User;
 import com.example.diss.repository.DocumentRepository;
 import com.example.diss.repository.TagRepository;
 import com.example.diss.repository.UserRepository;
-import jakarta.annotation.Resource;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.HttpHeaders;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,7 +41,34 @@ public class DocumentService {
     @Autowired
     private FileTextExtractor fileTextExtractor;
 
+    // List of supported file types
+    private static final Set<String> ALLOWED_FILE_TYPES = Set.of(
+            "application/pdf",
+            "application/msword",             // .doc
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+            "text/plain",                     // .txt
+            "image/png",
+            "image/jpeg",
+            "video/mp4",
+            "video/quicktime",                // .mov
+            "video/x-msvideo"                 // .avi
+    );
+
+    // List of supported file types for text content extraction
+    private static final Set<String> TEXT_BASED_FILE_TYPES = Set.of(
+            "application/pdf",
+            "application/msword", // .doc
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+            "text/plain" // .txt
+    );
+
     public Document uploadDocument(Long userId, String title, String description, MultipartFile file, List<String> tagNames) throws IOException {
+        // Validate file type
+        String fileType = file.getContentType();
+        if (!ALLOWED_FILE_TYPES.contains(fileType)) {
+            throw new IllegalArgumentException("Unsupported file type. Please upload a PDF, PNG, JPEG, or MP4.");
+        }
+
         // Ensure the upload directory exists
         if (!Files.exists(Paths.get(uploadDir))) {
             Files.createDirectories(Paths.get(uploadDir));
@@ -55,8 +80,14 @@ public class DocumentService {
         Path filePath = Paths.get(uploadDir, uniqueFilename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Extract text from the document (if applicable)
-        String extractedText = fileTextExtractor.extractText(file);
+        // Extract text if applicable
+        String extractedText = null;
+        if (TEXT_BASED_FILE_TYPES.contains(fileType)) {
+            try {
+                extractedText = fileTextExtractor.extractText(file);
+            } catch (Exception ignored) {
+            }
+        }
 
         // Handle tags
         Set<Tag> tags = new HashSet<>();
@@ -99,6 +130,12 @@ public class DocumentService {
             doc.setDescription(description);
 
         if (file != null && !file.isEmpty()) {
+            // Validate file type
+            String fileType = file.getContentType();
+            if (!ALLOWED_FILE_TYPES.contains(fileType)) {
+                throw new IllegalArgumentException("Unsupported file type. Please upload a PDF, PNG, JPEG, or MP4.");
+            }
+
             if (!Files.exists(Paths.get(uploadDir))) {
                 Files.createDirectories(Paths.get(uploadDir));
             }
@@ -109,7 +146,9 @@ public class DocumentService {
                 Path oldFilePath = Paths.get(oldPath);
                 try {
                     Files.deleteIfExists(oldFilePath);
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             // Save new file
@@ -120,8 +159,17 @@ public class DocumentService {
             Files.copy(file.getInputStream(), newPath, StandardCopyOption.REPLACE_EXISTING);
 
             doc.setFilePath(newPath.toString().replace("\\", "/"));
-            doc.setFileType(file.getContentType());
-            doc.setContent(fileTextExtractor.extractText(file));
+            doc.setFileType(fileType);
+
+            // Extract text if applicable
+            String extractedText = null;
+            if (TEXT_BASED_FILE_TYPES.contains(fileType)) {
+                try {
+                    extractedText = fileTextExtractor.extractText(file);
+                } catch (Exception ignored) {
+                }
+            }
+            doc.setContent(extractedText);
         }
 
         if (tagNames != null) {
