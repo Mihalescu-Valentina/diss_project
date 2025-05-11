@@ -13,7 +13,7 @@ public class Tag {
     private Long id;
 
     @Column(unique = true)
-    @JsonView(Document.Views.Detail.class)
+    @JsonView(Document.Views.Summary.class)
     private String name;
 }
 
