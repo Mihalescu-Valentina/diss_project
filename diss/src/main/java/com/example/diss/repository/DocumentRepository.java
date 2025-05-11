@@ -19,4 +19,7 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
     List<Document> searchByContent(@Param("keyword") String keyword);
 
     List<Document> findByTagsContaining(Tag tag);
+
+    @Query("SELECT DISTINCT d FROM Document d JOIN d.tags t WHERE t.name IN :tagNames GROUP BY d.id HAVING COUNT(DISTINCT t.name) = :tagCount")
+    List<Document> findByTagNames(@Param("tagNames") List<String> tagNames, @Param("tagCount") int tagCount);
 }

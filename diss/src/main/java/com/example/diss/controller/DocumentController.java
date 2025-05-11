@@ -44,6 +44,14 @@ public class DocumentController {
         return new ResponseEntity<>(documents, HttpStatus.OK);
     }
 
+    // Filter documents by tags
+    @PostMapping("/filter")
+    @JsonView(Document.Views.Summary.class)
+    public ResponseEntity<List<Document>> filterDocumentsByTags(@RequestBody List<String> tags) {
+        List<Document> documents = documentService.filterDocumentsByTags(tags);
+        return ResponseEntity.ok(documents);
+    }
+
     @GetMapping("/download/{documentId}")
     public ResponseEntity<?> downloadDocument(@PathVariable Long documentId) throws IOException {
         try {

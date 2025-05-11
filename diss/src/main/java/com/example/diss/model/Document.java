@@ -33,6 +33,7 @@ public class Document {
             joinColumns = @JoinColumn(name = "documents_id"),
             inverseJoinColumns = @JoinColumn(name = "tags_id")
     )
+    @JsonView(Views.Summary.class)
     private Set<Tag> tags = new HashSet<>();
 
     @ManyToOne
