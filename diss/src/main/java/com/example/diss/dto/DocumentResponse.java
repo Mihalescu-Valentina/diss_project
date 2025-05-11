@@ -13,6 +13,7 @@ import static org.yaml.snakeyaml.tokens.Token.ID.Tag;
 public class DocumentResponse {
     private Long id;
     private String title;
+    private String description;
     private List<String> tags;
     private String uploadedBy;
     private LocalDateTime uploadedAt;
@@ -20,6 +21,7 @@ public class DocumentResponse {
     public DocumentResponse(Document document) {
         this.id = document.getId();
         this.title = document.getTitle();
+        this.description = document.getDescription();
         this.tags = document.getTags().stream()
                 .map(com.example.diss.model.Tag::getName)
                 .collect(Collectors.toList());

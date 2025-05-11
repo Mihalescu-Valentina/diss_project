@@ -29,9 +29,10 @@ public class DocumentController {
     @PostMapping("/upload")
     public ResponseEntity<Document> uploadDocument(@RequestParam Long userId,
                                                    @RequestParam String title,
+                                                   @RequestParam String description,
                                                    @RequestParam MultipartFile file,
                                                    @RequestParam List<String> tags) throws IOException {
-        Document document = documentService.uploadDocument(userId, title, file, tags);
+        Document document = documentService.uploadDocument(userId, title, description, file, tags);
         return new ResponseEntity<>(document, HttpStatus.CREATED);
     }
 

@@ -8,6 +8,7 @@ import java.util.Set;
 @Data
 public class DocumentDTO {
     private String title;
+    private String description;
     private String content;
     private Set<String> tags;
     private String uploadedBy;
