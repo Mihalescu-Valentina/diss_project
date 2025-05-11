@@ -146,6 +146,9 @@ public class DocumentService {
         return documentRepository.findAll();
     }
 
+    public List<Document> filterDocumentsByTags(List<String> tagNames) {
+        return documentRepository.findByTagNames(tagNames, tagNames.size());
+    }
 
     public Document editDocumentTags(Long documentId, List<String> newTagNames) {
         Document doc = documentRepository.findById(documentId).orElseThrow();
