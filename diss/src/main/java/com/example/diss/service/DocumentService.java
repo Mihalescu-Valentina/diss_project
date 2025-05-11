@@ -43,7 +43,21 @@ public class DocumentService {
     @Autowired
     private FileTextExtractor fileTextExtractor;
 
+    // List of supported file types
+    private static final Set<String> ALLOWED_FILE_TYPES = Set.of(
+            "application/pdf",
+            "image/png",
+            "image/jpeg",
+            "video/mp4"
+    );
+
     public Document uploadDocument(Long userId, String title, String description, MultipartFile file, List<String> tagNames) throws IOException {
+        // Validate file type
+        String fileType = file.getContentType();
+        if (!ALLOWED_FILE_TYPES.contains(fileType)) {
+            throw new IllegalArgumentException("Unsupported file type. Please upload a PDF, PNG, JPEG, or MP4.");
+        }
+
         // Ensure the upload directory exists
         if (!Files.exists(Paths.get(uploadDir))) {
             Files.createDirectories(Paths.get(uploadDir));
@@ -55,8 +69,11 @@ public class DocumentService {
         Path filePath = Paths.get(uploadDir, uniqueFilename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-        // Extract text from the document (if applicable)
-        String extractedText = fileTextExtractor.extractText(file);
+        // Extract text if PDF (only applies to PDFs)
+        String extractedText = null;
+        if ("application/pdf".equals(fileType)) {
+            extractedText = fileTextExtractor.extractText(file);
+        }
 
         // Handle tags
         Set<Tag> tags = new HashSet<>();
@@ -99,6 +116,12 @@ public class DocumentService {
             doc.setDescription(description);
 
         if (file != null && !file.isEmpty()) {
+            // Validate file type
+            String fileType = file.getContentType();
+            if (!ALLOWED_FILE_TYPES.contains(fileType)) {
+                throw new IllegalArgumentException("Unsupported file type. Please upload a PDF, PNG, JPEG, or MP4.");
+            }
+
             if (!Files.exists(Paths.get(uploadDir))) {
                 Files.createDirectories(Paths.get(uploadDir));
             }
@@ -109,7 +132,9 @@ public class DocumentService {
                 Path oldFilePath = Paths.get(oldPath);
                 try {
                     Files.deleteIfExists(oldFilePath);
-                } catch (IOException e) {}
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             // Save new file
@@ -120,8 +145,14 @@ public class DocumentService {
             Files.copy(file.getInputStream(), newPath, StandardCopyOption.REPLACE_EXISTING);
 
             doc.setFilePath(newPath.toString().replace("\\", "/"));
-            doc.setFileType(file.getContentType());
-            doc.setContent(fileTextExtractor.extractText(file));
+            doc.setFileType(fileType);
+
+            // Extract text if PDF
+            String extractedText = null;
+            if ("application/pdf".equals(fileType)) {
+                extractedText = fileTextExtractor.extractText(file);
+            }
+            doc.setContent(extractedText);
         }
 
         if (tagNames != null) {
